@@ -17,7 +17,14 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-# version: 3.0.0
+# version: 3.2.1
+# 3.2.1
+# - change sequence of tasks: first: patch
+# 3.1.1
+# - new targets majord minord patchd to allow for allow-dirty
+# 3.1.0
+# - bumpversion support
+# - targets: major minor patch
 # 3.0.0
 # - semantic versioning
 # - binaries created under build/release/<architecture>
@@ -67,7 +74,32 @@ GOARM4	   := 5
 # ARG			:= $(GOOS1)-$(GOARCH1)/$(APP)$(SRC_VERSION))
 
 # targets which are not a file
-.PHONY: clean test test.html test-html ndebug nodebug upx touch force deploy version chkVersion
+.PHONY: clean test test.html test-html ndebug nodebug upx touch force deploy version chkVersion major minor patch
+
+patch:
+	bumpversion patch
+	make all
+
+patchd:
+	bumpversion --allow-dirty patch
+	make all
+
+major:
+	bumpversion major
+	make all
+
+majord:
+	bumpversion --allow-dirty major
+	make all
+
+minor:
+	bumpversion minor
+	make all
+
+minord:
+	bumpversion --allow-dirty minor
+	make all
+
 
 # pl4 currently not called
 all: chkVersion pl1 pl2 pl3 pl4 deploy

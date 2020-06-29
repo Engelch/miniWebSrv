@@ -1,2 +1,5 @@
 miniWebSrv
 build/
+.DS_Store
+*~
+.touchfile

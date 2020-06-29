@@ -26,14 +26,18 @@ package main
 import (
 	"fmt"
 	"io"
+	heavenshelp "miniWebSrv/Utils"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 	"io/ioutil"
+	"github.com/urfave/cli"
 )
 
-const appVersion = "0.4.1"		// semantic versioning
+var appData struct {
+	portNumber uint
+}
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("URL.Path:", r.URL.Path)
@@ -55,31 +59,42 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Hello, this is miniLogSrv at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
 }
 
+// commandLineOptions just separates the definition of command line options ==> creating a shorter main
+func commandLineOptions() []cli.Flag {
+	return []cli.Flag{
+		cli.UintFlag{
+			Name:        "port, p",
+			Usage:       "MANDATORY: Port number to listen to. Range: [0..65535]",
+			Destination: &appData.portNumber,
+		},
+	}
+}
+
 func main() {
-	// cmdLine parsing
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Port # to listen to must be specified as first argument")
-		os.Exit(1)
+	var err error
+	app := cli.NewApp()
+	app.Flags 	= commandLineOptions()
+	app.Name 	= "miniWebSrv"
+	app.Version = "0.5.0"		// semantic versioning
+	app.Usage 	= "Web Server for testing/echoing the input."
+	app.Action 	= func(c *cli.Context) error {
+		heavenshelp.LogInit(app.Name)
+		heavenshelp.LogInfo(app.Name + "::version:" + app.Version + ":service starting at: " + time.Now().String())
+		if c.Bool("debug") {
+			heavenshelp.CondDebugSet(true)
+		}
+		heavenshelp.CondDebug("Debug is enabled.")
+		if appData.portNumber >= 65536 {
+			fmt.Fprintln(os.Stderr, "The specified port number must be between 0 and 65535:")
+			os.Exit(4)
+		}
+		// enable the server
+		http.HandleFunc("/", requestHandler)
+		err = http.ListenAndServe(":"+strconv.FormatUint(uint64(appData.portNumber), 10), nil)
+		return err
 	}
-	portStr := os.Args[1]
-	portInt, err := strconv.ParseInt(portStr, 10, 32)
+	err = app.Run(os.Args)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Argument could not be converted to int:", portStr)
-		os.Exit(2)
-	}
-	if portInt < 0 {
-		fmt.Fprintln(os.Stderr, "Argument must be ≥ 0:", portStr)
-		os.Exit(3)
-	}
-	if portInt >= 65536 {
-		fmt.Fprintln(os.Stderr, "Argument must be ≤ 65535:", portStr)
-		os.Exit(4)
-	}
-	// enable the server
-	http.HandleFunc("/", requestHandler)
-	err = http.ListenAndServe(":"+portStr, nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR:ListenAndServe:" + err.Error())
-		os.Exit(9)
+		heavenshelp.LogPanic(err.Error())
 	}
 }
