@@ -3,7 +3,7 @@
 appDir=$(dirname $0)
 cd "$appDir"
 
-START="egrep -ih 'app(\.)?Version[[:space:]]*=' *.go | egrep '\d+\.\d+\.\d+' | tail -n1"
+START="egrep -ih 'app(\.)?Version[[:space:]]*=' *.go | egrep '[0-9]+\.[0-9]+\.[0-9]+' | tail -n1"
 
 if [ "$1" = -d ] ; then
    eval $START

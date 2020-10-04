@@ -5,3 +5,4 @@ build/
 .touchfile
 coverage.out
 vendor/
+.idea/

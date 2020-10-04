@@ -60,7 +60,7 @@ endif
 
 BINDIR	:=	./build/
 
-all xxupx: go.mod
+all xxupx: versionChk go.mod
 	@for i in $(PLATFORM_MAKEFILE) ; do \
 		APP=$(APP) SRC_VERSION=$(SRC_VERSION) BINDIR=$(BINDIR)$(ENVIRONMENT)/ LDFLAGS=$(LDFLAGS) make -f $$i $@; \
 	done
@@ -70,6 +70,9 @@ release:
 
 release-upx upx:
 	ENV=release make xxupx
+
+versionChk:
+	@if [ `echo $(SRC_VERSION) | egrep  "[0-9]+\.[0-9]+\.[0-9]+" | wc -c` -le 1 ] ; then echo no correct version detected ; exit 1; fi
 
 # support multiple spellings as previous versions
 test-html: test.html
