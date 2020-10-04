@@ -1,4 +1,4 @@
-// Copyright (c) 2019 engel-ch@outlook.com
+// Copyright (c) 2020 engel-ch@outlook.com
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,13 @@ package main
 import (
 	"fmt"
 	"io"
-	heavenshelp "miniWebSrv/Utils"
+	"io/ioutil"
+	heavenshelp "miniWebSrv/Utils" // subdir
 	"net/http"
 	"os"
 	"strconv"
 	"time"
-	"io/ioutil"
+
 	"github.com/urfave/cli"
 )
 
@@ -49,8 +50,8 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Content-Length:", r.ContentLength)
 	fmt.Println("Form:", r.Form)
 	body, err := ioutil.ReadAll(r.Body)
-   if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading body: %v", err)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading body: %v\n", err)
 		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
@@ -73,21 +74,22 @@ func commandLineOptions() []cli.Flag {
 func main() {
 	var err error
 	app := cli.NewApp()
-	app.Flags 	= commandLineOptions()
-	app.Name 	= "miniWebSrv"
-	app.Version = "0.5.0"		// semantic versioning
-	app.Usage 	= "Web Server for testing/echoing the input."
-	app.Action 	= func(c *cli.Context) error {
+	app.Flags = commandLineOptions()
+	app.Name = "miniWebSrv"
+	app.Version = "0.5.3" // semantic versioning
+	app.Usage = "Web Server for testing/echoing the input."
+	app.Action = func(c *cli.Context) error {
 		heavenshelp.LogInit(app.Name)
 		heavenshelp.LogInfo(app.Name + "::version:" + app.Version + ":service starting at: " + time.Now().String())
 		if c.Bool("debug") {
 			heavenshelp.CondDebugSet(true)
 		}
 		heavenshelp.CondDebug("Debug is enabled.")
-		if appData.portNumber >= 65536 {
-			fmt.Fprintln(os.Stderr, "The specified port number must be between 0 and 65535:")
+		if appData.portNumber >= 65536 || appData.portNumber == 0 {
+			fmt.Fprintln(os.Stderr, "The specified port number must be between 1 and 65535:")
 			os.Exit(4)
 		}
+		heavenshelp.LogInfo("Listening on port: " + fmt.Sprint(appData.portNumber))
 		// enable the server
 		http.HandleFunc("/", requestHandler)
 		err = http.ListenAndServe(":"+strconv.FormatUint(uint64(appData.portNumber), 10), nil)
