@@ -75,9 +75,10 @@ release-upx upx:
 test-html: test.html
 
 # go modules support
+# LOCAL PACKAGES are to be listed in GOPRIVATE; otherwise an error is returned
 go.mod:
-	go mod init
-	go mod vendor
+	GOPRIVATE="miniWebSrv/Utils" go mod init
+	GOPRIVATE="miniWebSrv/Utils" go mod vendor
 
 # ----------------------------- bumpversion ----------------------------------------------------
 
