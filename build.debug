@@ -63,7 +63,7 @@ declare -r _appDir=$(dirname $0)
 
 echo OS is $_os
 echo Architecture is $_arch
-echo Calling $0.${_os}_${_arch}
-$0.${_os}_${_arch} $@
+echo Calling ${_appDir}/bin/$0.${_os}_${_arch}
+${_appDir}/bin/$0.${_os}_${_arch} $@
 
 # EOF

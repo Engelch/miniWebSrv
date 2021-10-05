@@ -54,7 +54,18 @@ set -e      # exit if error
 ### CLI parsing
 
 unset _forceMode
-[ "$1" = -f ] && _forceMode=TRUE
+while getopts "dfh" o; do
+    case "${o}" in
+        d)  debugSet
+            ;;
+        f)  _forceMode=TRUE
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
 
 #### check if the command-name is structured in such a way that we can 
 #### determine the release-type and target OS and architecture by it.
@@ -65,6 +76,8 @@ declare -r numSeparatorsDetected=$(echo $(basename $0) | awk -F"." '{print NF-1}
 
 #### detect the parameters from the name of the command.
 
+declare -r _appDir=$(cd $(dirname $0); /bin/pwd)
+cd $_appDir/..
 declare -r _binDir=${BINDIR:-./build}
 declare -r _osDir=$(echo $0 | sed 's/.*\.//')
 declare -r _osType=$(echo $_osDir | sed 's/_.*//')
@@ -87,14 +100,11 @@ case $_releaseType in
     *) errorExit 2 Unsupported release-type:$_releaseType
         ;;
 esac
-# TODO: upx support for release mode
 
-declare -r _appDir=$(cd $(dirname $0); /bin/pwd)
 declare -r _outputDir=$_binDir/$_releaseType/$_osDir
-declare -r _appName=${APPNAME:-$(basename $_appDir)}
-
-[ ! -x $_appDir/version.sh ] && errorExit 3 version.sh script not found.
-declare -r _appVersion=$($_appDir/version.sh)
+declare -r _appName=$(pwd | xargs basename)
+[ ! -x $_appDir/../version.sh ] && errorExit 3 version.sh script not found.
+declare -r _appVersion=$($_appDir/../version.sh)
 
 ### debug output
 
