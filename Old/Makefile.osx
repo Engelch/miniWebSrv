@@ -1,0 +1,67 @@
+# Makefile to create go binaries for 3 target platforms
+# License type: MIT
+# Copyright (c) 2020 by Christian Engel (engel-ch@outlook.com)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+# associated documentation files (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+# LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# 5.0.0
+
+# first architecture: darwin alias OSX
+GOOS1 		:= darwin
+GOARCH1 	:= amd64
+GOARM1		:=
+DIRSPEC1    := 				# specify a subdirectory add on, here to use different dirs
+                            # for Linux RPi and Linux Cube
+
+# now let's take all go files in the current directory as the base for the compilation.
+# If you want to exclude some files, either put them into a sub-directory or change the
+# line below. This can be adjusted here.
+# By using sub-Makefiles, it is now easy to define different source-file for different platform.
+# Hopefully, we never have to do so.
+SRC 			:= $(wildcard *.go)
+
+# when compiling, then the sources are 3 levels up
+# Usually, not to be adjusted.
+SRCIMPORT 		:= $(foreach file,$(SRC),../../../$(file))
+
+# targets which are not a file
+.PHONY: clean test test.html test-html upx major minor patch all
+
+# Sub-Makefiles have to implement the targets
+# 	all
+# 	xxupx
+
+all: $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)/$(APP)-$(SRC_VERSION)
+
+# This makefile-version also introduces platform-specific deployment files such as deploy.darwin.
+# This step is skipped is this file does not exist.
+# Compile the binary with go-build is this version does not yet exist as a binary.
+# Usually, this rule does not have to be changed for other compilations
+$(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)/$(APP)-$(SRC_VERSION): $(SRC)
+	@test -d $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1) || mkdir -p $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)
+	@if [ -f $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)/$(APP)-$(SRC_VERSION) ] ; then echo Version $(SRC_VERSION) already existing and source-code changed, try to increase the version or do a lastclean ; exit 1 ; \
+		else echo Compiling $(APP)-$(SRC_VERSION)... ; cd $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1); env GOARCH=$(GOARCH1) GOOS=$(GOOS1) $(GOARM1) go build $(LDFLAGS) -o $(APP)-$(SRC_VERSION) $(SRCIMPORT) && ln -fs $(APP)-$(SRC_VERSION) $(APP) ; fi
+	@if [ $@ =  "all" -a -f deploy.$(GOOS1)-$(GOARCH1)$(DIRSPEC1) ] ; then bash deploy.$(GOOS1)-$(GOARCH1)$(DIRSPEC1) $(BINDIR) $(APP) $(SRC_VERSION) ; fi
+
+# A different name to upx had to be introduced to make sure that upx is run in release-mode only.
+# no upx implementation as buggy before. Binaries just crashed after start.
+# Only to be called in release mode.
+xxupx: all $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)/$(APP)-$(SRC_VERSION).upx
+
+$(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1)/$(APP)-$(SRC_VERSION).upx:
+	cd $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1); cp $(APP)-$(SRC_VERSION) $(APP)-$(SRC_VERSION).upx
+	cd $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1); upx $(APP)-$(SRC_VERSION).upx
+	cd $(BINDIR)$(GOOS1)-$(GOARCH1)$(DIRSPEC1); ln -sf $(APP)-$(SRC_VERSION).upx $(APP).upx

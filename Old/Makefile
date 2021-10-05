@@ -17,14 +17,16 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
+# 5.1.0
+# - bumpversion simplified and call corrected for new version of bumpversion (implying main.go)
+# - test and test-coverage statements included
+#
 # 5.0.0
 # - merged w/ version from gomakefile project
 
 # Sub-Makefiles have to implement the targets
 # 	all
 # 	upx
-# 	test
-# 	test.html
 
 # binary name is the name of this directory, unless the name of this
 # directory is src. In this case, use the parent directory name of src
@@ -62,8 +64,11 @@ BINDIR	:=	./build/
 
 all xxupx: versionChk go.mod
 	@for i in $(PLATFORM_MAKEFILE) ; do \
+		echo APP=$(APP) SRC_VERSION=$(SRC_VERSION) BINDIR=$(BINDIR)$(ENVIRONMENT)/ LDFLAGS=$(LDFLAGS) make -f $$i $@; \
 		APP=$(APP) SRC_VERSION=$(SRC_VERSION) BINDIR=$(BINDIR)$(ENVIRONMENT)/ LDFLAGS=$(LDFLAGS) make -f $$i $@; \
 	done
+
+rel: release
 
 release:
 	ENV=release make all
@@ -85,43 +90,42 @@ go.mod:
 
 # ----------------------------- bumpversion ----------------------------------------------------
 
-pd: patchd
-
-patchd:
-	bumpversion --allow-dirty patch
 
 p: patch
 
 patch:
-	bumpversion patch
+	bumpversion --current-version `./version.sh` --allow-dirty patch main.go
 
 ma: major
 
 major:
-	bumpversion major
-
-mad: majord
-
-majord:
-	bumpversion --allow-dirty major
+	bumpversion --current-version `./version.sh` --allow-dirty major main.go
 
 mi: minor
 
 minor:
-	bumpversion minor
-
-mid: minord
-
-minord:
-	bumpversion --allow-dirty minor
+	bumpversion --current-version `./version.sh` --allow-dirty minor main.go
 
 # ----------------------------- testing ----------------------------------------------------
 # testing on special platform is something not yet implemented yet
 
-test:
-	go test -v -coverprofile=coverage.out
+# run unit-tests
+t: test
 
-test.html: test
+test:
+	go test -v
+
+# determine test coverage
+tc: test-coverage
+
+test-coverage:
+	go test -v -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+
+tch: test-coverage-html
+
+test-coverage-html:
+	go test -v -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 	
 # ----------------------------- cleaning ----------------------------------------------------

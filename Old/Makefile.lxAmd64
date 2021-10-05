@@ -20,7 +20,7 @@
 # 5.0.0
 
 # first architecture: darwin alias OSX
-GOOS1 		:= darwin
+GOOS1 		:= linux
 GOARCH1 	:= amd64
 GOARM1		:=
 DIRSPEC1    := 				# specify a subdirectory add on, here to use different dirs
