@@ -50,6 +50,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RemoteAddr:", r.RemoteAddr)
 	fmt.Println("RequestURI:", r.RequestURI)
 	fmt.Println("Content-Length:", r.ContentLength)
+
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Println("Error calling ParseForm...")
+	}
 	fmt.Println("Form:", r.Form)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -61,14 +66,27 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Body: ^^^^^^^^^^^^^^^^^^^^")
 	io.WriteString(w, "Hello, this is miniLogSrv at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
 	io.WriteString(w, "Method: "+r.Method+"\r\n")
-	io.WriteString(w, "URL:", r.URL.Path+"\r\n")
-	io.WriteString(w, "Headers:\r\n")
+	io.WriteString(w, "URL: "+r.URL.Path+"\r\n")
+	io.WriteString(w, "Host: "+r.Host+"\r\n")
+	io.WriteString(w, "Header:\r\n")
 	for key := range r.Header {
-		io.WriteString(w, "  "+key+":")
+		io.WriteString(w, "  "+key+": ")
 		for value := range r.Header[key] {
 			io.WriteString(w, "    "+r.Header[key][value]+"\r\n")
 		}
 	}
+
+	io.WriteString(w, "Remote Address: "+r.RemoteAddr+"\r\n")
+	io.WriteString(w, "RequestURI: "+r.RequestURI+"\r\n")
+	io.WriteString(w, "Content-Length: "+strconv.FormatInt(r.ContentLength, 10)+"\r\n")
+	io.WriteString(w, "Form:\r\n")
+	for key := range r.Form {
+		io.WriteString(w, " "+key+": ")
+		for value := range r.Form[key] {
+			io.WriteString(w, " "+r.Form[key][value]+"\r\n")
+		}
+	}
+
 	io.WriteString(w, "Body:\r\n")
 	io.WriteString(w, strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
 }
@@ -89,7 +107,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.5.10" // semantic versioning
+	app.Version = "0.9.0" // semantic versioning
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
 		heavenshelp.LogInit(app.Name)
