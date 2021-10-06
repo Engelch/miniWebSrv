@@ -31,6 +31,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
@@ -41,6 +42,7 @@ var appData struct {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Method:", r.Method)
 	fmt.Println("URL.Path:", r.URL.Path)
 	fmt.Println("Host:", r.Host)
 	fmt.Println("Header:", r.Header)
@@ -58,6 +60,17 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Body: vvvvvvvvvvvvvvvvvvvv\n", string(body))
 	fmt.Println("Body: ^^^^^^^^^^^^^^^^^^^^")
 	io.WriteString(w, "Hello, this is miniLogSrv at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
+	io.WriteString(w, "Method: "+r.Method+"\r\n")
+	io.WriteString(w, "URL:", r.URL.Path+"\r\n")
+	io.WriteString(w, "Headers:\r\n")
+	for key := range r.Header {
+		io.WriteString(w, "  "+key+":")
+		for value := range r.Header[key] {
+			io.WriteString(w, "    "+r.Header[key][value]+"\r\n")
+		}
+	}
+	io.WriteString(w, "Body:\r\n")
+	io.WriteString(w, strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
 }
 
 // commandLineOptions just separates the definition of command line options ==> creating a shorter main
@@ -76,7 +89,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.5.3" // semantic versioning
+	app.Version = "0.5.10" // semantic versioning
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
 		heavenshelp.LogInit(app.Name)
