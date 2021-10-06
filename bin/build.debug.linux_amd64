@@ -103,8 +103,8 @@ esac
 
 declare -r _outputDir=$_binDir/$_releaseType/$_osDir
 declare -r _appName=$(pwd | xargs basename)
-[ ! -x $_appDir/../version.sh ] && errorExit 3 version.sh script not found.
-declare -r _appVersion=$($_appDir/../version.sh)
+[ ! -x $_appDir/version.sh ] && errorExit 3 version.sh script not found.
+declare -r _appVersion=$($_appDir/version.sh)
 
 ### debug output
 

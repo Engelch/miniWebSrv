@@ -1,5 +1,0 @@
-find . -name coverage.out -exec /bin/rm -f {} \;
-find . -name '*~' -exec /bin/rm -f {} \;
-find . -name '*.bak' -exec /bin/rm -f {} \;
-find . -name '*.bup' -exec /bin/rm -f {} \;
-/bin/rm -fr ./build

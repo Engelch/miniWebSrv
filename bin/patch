@@ -73,10 +73,10 @@ debug CMD $CMD
 
 [ ! -x ${_appDir}/version.sh ] && errorExit 1 Could not find version.sh
 
-debug bumpversion --current-version `./version.sh` --allow-dirty ${CMD} $(${_appDir}/version.sh -d | cut -d: -f1)
+debug bumpversion --current-version `${_appDir}/version.sh` --allow-dirty ${CMD} $(${_appDir}/version.sh -d | cut -d: -f1)
 debugExecIfDebug exit 0
 
-bumpversion --current-version `./version.sh` --allow-dirty ${CMD} $(${_appDir}/version.sh -d | cut -d: -f1)
+bumpversion --current-version `${_appDir}/version.sh` --allow-dirty ${CMD} $(${_appDir}/version.sh -d | cut -d: -f1)
 
 
 

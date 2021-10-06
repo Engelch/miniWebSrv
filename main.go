@@ -86,7 +86,13 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 			io.WriteString(w, " "+r.Form[key][value]+"\r\n")
 		}
 	}
-
+	io.WriteString(w, "PostForm:\r\n")
+	for key := range r.PostForm {
+		io.WriteString(w, " "+key+": ")
+		for value := range r.PostForm[key] {
+			io.WriteString(w, " "+r.PostForm[key][value]+"\r\n")
+		}
+	}
 	io.WriteString(w, "Body:\r\n")
 	io.WriteString(w, strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
 }
@@ -107,7 +113,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.9.0" // semantic versioning
+	app.Version = "0.10.0" // semantic versioning
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
 		heavenshelp.LogInit(app.Name)
