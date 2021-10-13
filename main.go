@@ -39,6 +39,7 @@ import (
 
 var appData struct {
 	portNumber uint
+	appVersion string
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +65,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Body: vvvvvvvvvvvvvvvvvvvv\n", string(body))
 	fmt.Println("Body: ^^^^^^^^^^^^^^^^^^^^")
-	io.WriteString(w, "Hello, this is miniLogSrv at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
+	io.WriteString(w, "Hello, this is miniLogSrv version "+appData.appVersion+" at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
 	io.WriteString(w, "Method: "+r.Method+"\r\n")
 	io.WriteString(w, "URL: "+r.URL.Path+"\r\n")
 	io.WriteString(w, "Host: "+r.Host+"\r\n")
@@ -113,11 +114,11 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.10.0" // semantic versioning
+	app.Version = "0.11.2" // semantic versioning
+	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
-		heavenshelp.LogInit(app.Name)
-		heavenshelp.LogInfo(app.Name + "::version:" + app.Version + ":service starting at: " + time.Now().String())
+		fmt.Fprintln(os.Stderr, app.Name+"::version:"+app.Version+":service starting at: "+time.Now().String())
 		if c.Bool("debug") {
 			heavenshelp.CondDebugSet(true)
 		}
@@ -126,7 +127,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "The specified port number must be between 1 and 65535:")
 			os.Exit(4)
 		}
-		heavenshelp.LogInfo("Listening on port: " + fmt.Sprint(appData.portNumber))
+		fmt.Fprintln(os.Stderr, "Listening on port: "+fmt.Sprint(appData.portNumber))
 		// enable the server
 		http.HandleFunc("/", requestHandler)
 		err = http.ListenAndServe(":"+strconv.FormatUint(uint64(appData.portNumber), 10), nil)
@@ -134,6 +135,7 @@ func main() {
 	}
 	err = app.Run(os.Args)
 	if err != nil {
-		heavenshelp.LogPanic(err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(99)
 	}
 }
