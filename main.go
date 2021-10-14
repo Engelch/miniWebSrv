@@ -24,6 +24,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -52,17 +53,24 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RequestURI:", r.RequestURI)
 	fmt.Println("Content-Length:", r.ContentLength)
 
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Println("Error calling ParseForm...")
-	}
-	fmt.Println("Form:", r.Form)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading body: %v\n", err)
 		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
+	r.Body = ioutil.NopCloser(bytes.NewReader(body)) // reset reader for ParseForm
+
+	err = r.ParseForm()
+	if err != nil {
+		fmt.Println("Error calling ParseForm...")
+	}
+	fmt.Println("Form:", r.Form)
+	for k := range r.PostForm { // remove post values from Form => Form: getValues, PostForm: PostValues
+		r.Form.Del(k)
+	}
+	fmt.Println("PostForm:", r.PostForm)
+
 	fmt.Println("Body: vvvvvvvvvvvvvvvvvvvv\n", string(body))
 	fmt.Println("Body: ^^^^^^^^^^^^^^^^^^^^")
 	io.WriteString(w, "Hello, this is miniLogSrv version "+appData.appVersion+" at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
@@ -82,20 +90,20 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Content-Length: "+strconv.FormatInt(r.ContentLength, 10)+"\r\n")
 	io.WriteString(w, "Form:\r\n")
 	for key := range r.Form {
-		io.WriteString(w, " "+key+": ")
 		for value := range r.Form[key] {
-			io.WriteString(w, " "+r.Form[key][value]+"\r\n")
+			io.WriteString(w, " "+key+": ")
+			io.WriteString(w, r.Form[key][value]+"\r\n")
 		}
 	}
 	io.WriteString(w, "PostForm:\r\n")
 	for key := range r.PostForm {
-		io.WriteString(w, " "+key+": ")
 		for value := range r.PostForm[key] {
-			io.WriteString(w, " "+r.PostForm[key][value]+"\r\n")
+			io.WriteString(w, " "+key+": ")
+			io.WriteString(w, r.PostForm[key][value]+"\r\n")
 		}
 	}
 	io.WriteString(w, "Body:\r\n")
-	io.WriteString(w, strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
+	io.WriteString(w, " "+strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
 }
 
 // commandLineOptions just separates the definition of command line options ==> creating a shorter main
@@ -114,7 +122,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.11.2" // semantic versioning
+	app.Version = "0.11.4" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
