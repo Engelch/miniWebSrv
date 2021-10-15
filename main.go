@@ -45,6 +45,7 @@ var appData struct {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("NEW REQUEST =======================================================")
 	fmt.Println("Method:", r.Method)
 	fmt.Println("URL.Path:", r.URL.Path)
 	fmt.Println("Host:", r.Host)
@@ -132,7 +133,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.12.0" // semantic versioning
+	app.Version = "0.12.1" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
