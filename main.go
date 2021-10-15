@@ -41,6 +41,7 @@ import (
 var appData struct {
 	portNumber uint
 	appVersion string
+	pathMode   bool
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +54,10 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RequestURI:", r.RequestURI)
 	fmt.Println("Content-Length:", r.ContentLength)
 
+	if appData.pathMode {
+		io.WriteString(w, r.URL.Path+"\r\n")
+		return
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading body: %v\n", err)
@@ -114,6 +119,11 @@ func commandLineOptions() []cli.Flag {
 			Usage:       "MANDATORY: Port number to listen to. Range: [0..65535]",
 			Destination: &appData.portNumber,
 		},
+		cli.BoolFlag{
+			Name:        "path-mode, m",
+			Usage:       "Just return the path. For simple integration into monitor solutions.",
+			Destination: &appData.pathMode,
+		},
 	}
 }
 
@@ -122,7 +132,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.11.4" // semantic versioning
+	app.Version = "0.12.0" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
@@ -134,6 +144,9 @@ func main() {
 		if appData.portNumber >= 65536 || appData.portNumber == 0 {
 			fmt.Fprintln(os.Stderr, "The specified port number must be between 1 and 65535:")
 			os.Exit(4)
+		}
+		if appData.pathMode {
+			fmt.Fprintln(os.Stderr, "Path mode.")
 		}
 		fmt.Fprintln(os.Stderr, "Listening on port: "+fmt.Sprint(appData.portNumber))
 		// enable the server
