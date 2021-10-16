@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	heavenshelp "miniWebSrv/Utils" // subdir
+	heavenshelp "miniWebSrv/debugErrorCE" // subdir
 	"net/http"
 	"os"
 	"strconv"
@@ -133,7 +133,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.12.1" // semantic versioning
+	app.Version = "0.12.2" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
@@ -141,7 +141,7 @@ func main() {
 		if c.Bool("debug") {
 			heavenshelp.CondDebugSet(true)
 		}
-		heavenshelp.CondDebug("Debug is enabled.")
+		heavenshelp.CondDebugln("Debug is enabled.")
 		if appData.portNumber >= 65536 || appData.portNumber == 0 {
 			fmt.Fprintln(os.Stderr, "The specified port number must be between 1 and 65535:")
 			os.Exit(4)
