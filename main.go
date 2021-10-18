@@ -133,7 +133,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "0.12.2" // semantic versioning
+	app.Version = "1.0.0" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
