@@ -108,6 +108,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 			io.WriteString(w, r.PostForm[key][value]+"\r\n")
 		}
 	}
+	io.WriteString(w, "Length of body: "+fmt.Sprintf("%d", len(body))+"\r\n")
 	io.WriteString(w, "Body:\r\n")
 	io.WriteString(w, " "+strings.Replace(string(body), "\n", "\n  ", -1)+"\r\n")
 }
@@ -133,7 +134,7 @@ func main() {
 	app := cli.NewApp()
 	app.Flags = commandLineOptions()
 	app.Name = "miniWebSrv"
-	app.Version = "1.0.0" // semantic versioning
+	app.Version = "1.1.0" // semantic versioning
 	appData.appVersion = app.Version
 	app.Usage = "Web Server for testing/echoing the input."
 	app.Action = func(c *cli.Context) error {
