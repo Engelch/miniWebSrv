@@ -26,18 +26,20 @@ package main
 import (
 	"fmt"
 	"io"
-	heavenshelp "miniWebSrv/Utils"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 	"io/ioutil"
-	"github.com/urfave/cli"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
+	ce "github.com/engelch/debugerrorce/v2"
+	"github.com/urfave/cli/v2"
 )
 
-var appData struct {
-	portNumber uint
-}
+const listenPortOption = "port" // option name (use > 1) to specify a listening port
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("URL.Path:", r.URL.Path)
@@ -49,52 +51,110 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Content-Length:", r.ContentLength)
 	fmt.Println("Form:", r.Form)
 	body, err := ioutil.ReadAll(r.Body)
-   if err != nil {
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading body: %v", err)
 		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
 	fmt.Println("Body: vvvvvvvvvvvvvvvvvvvv\n", string(body))
 	fmt.Println("Body: ^^^^^^^^^^^^^^^^^^^^")
+	if len(r.Header["X-Ssl-Cert"]) > 0 {
+		fmt.Println("CERT::" + strings.Join(r.Header["X-Ssl-Cert"], ">>>>>>>>>><<<<<<<<<<<"))
+		if p, err := url.QueryUnescape(strings.Join(r.Header["X-Ssl-Cert"], ">>>>>>>>>><<<<<<<<<<<")); err != nil {
+			fmt.Println("ERROR unescaping URL::" + err.Error())
+		} else {
+			fmt.Println("CERT URL-decoded::" + p)
+			cmd := exec.Command("bash", "-c", "openssl x509 -outform der | openssl sha256 | sed 's/.*stdin)= //'")
+			stdin, err := cmd.StdinPipe()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR opening stdin pipe:"+err.Error())
+				return
+			}
+
+			go func() {
+				defer stdin.Close()
+				io.WriteString(stdin, p)
+			}()
+
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR opening stdin pipe:"+err.Error())
+			}
+			fmt.Println("Checksum is::" + string(out))
+		}
+	}
 	io.WriteString(w, "Hello, this is miniLogSrv at "+time.Now().UTC().Format(time.RFC3339)+"\r\n")
+}
+
+// evaluateDebug evaluates command line arguments
+func evaluateDebug(c *cli.Context) {
+	if c.Bool("debug") {
+		ce.CondDebugSet(true)
+	}
+	ce.CondDebugln("Debug is enabled.")
+}
+
+// evaluatePortNumber evaluates command line arguments
+func evaluatePortNumber(c *cli.Context, port *uint64) {
+	*port = c.Uint64(listenPortOption)
+	if *port == 0 || *port >= 65536 {
+		ce.ErrorExit(11, "Listening port not in allowed range:"+fmt.Sprintf("%d", *port))
+	}
+	ce.CondDebugln("Listing port number is: " + fmt.Sprintf("%d", *port))
+}
+
+// evaluateArgs does the CLI argument and option validation
+func evaluateArgs(c *cli.Context, port *uint64) {
+	if c == nil {
+		ce.ErrorExit(10, "apd structure is empty.")
+	}
+	evaluateDebug(c)
+	evaluatePortNumber(c, port)
 }
 
 // commandLineOptions just separates the definition of command line options ==> creating a shorter main
 func commandLineOptions() []cli.Flag {
 	return []cli.Flag{
-		cli.UintFlag{
-			Name:        "port, p",
-			Usage:       "MANDATORY: Port number to listen to. Range: [0..65535]",
-			Destination: &appData.portNumber,
+		&cli.UintFlag{
+			Name:    "port",
+			Aliases: []string{"p"},
+			Usage:   "MANDATORY: Port number to listen to. Range: [1..65535] (default: 4949)",
+			Value:   4949,
+		},
+		&cli.StringFlag{
+			Name:    "ipAddress",
+			Aliases: []string{"l"},
+			Usage:   "IP address to listen to (default: 127.0.0.1)",
+			Value:   "127.0.0.1",
+		},
+		&cli.BoolFlag{
+			Name:    "debug",
+			Aliases: []string{"D"},
+			Value:   false,
+			Usage:   "debug mode",
 		},
 	}
 }
 
 func main() {
 	var err error
-	app := cli.NewApp()
-	app.Flags 	= commandLineOptions()
-	app.Name 	= "miniWebSrv"
-	app.Version = "0.5.0"		// semantic versioning
-	app.Usage 	= "Web Server for testing/echoing the input."
-	app.Action 	= func(c *cli.Context) error {
-		heavenshelp.LogInit(app.Name)
-		heavenshelp.LogInfo(app.Name + "::version:" + app.Version + ":service starting at: " + time.Now().String())
-		if c.Bool("debug") {
-			heavenshelp.CondDebugSet(true)
-		}
-		heavenshelp.CondDebug("Debug is enabled.")
-		if appData.portNumber >= 65536 {
-			fmt.Fprintln(os.Stderr, "The specified port number must be between 0 and 65535:")
-			os.Exit(4)
-		}
+	var listeningPort uint64
+	app := cli.App{}
+	app.Flags = commandLineOptions()
+	app.Name = "mini-web-svc"
+	app.Version = "1.3.3" // semantic versioning
+	app.Usage = "Web Server for testing."
+	app.Action = func(c *cli.Context) error {
+		ce.ExecutableReachableByPath("openssl", "sed") // openssl is required to transfer the certificate to DER format
+		evaluateArgs(c, &listeningPort)                // exits the app in case of error
+		_listener := c.String("ipAddress") + ":" + strconv.FormatUint(listeningPort, 10)
+		fmt.Fprintln(os.Stderr, app.Name+"::version: "+app.Version+"::service starting at "+time.Now().Format(time.RFC3339)+"::"+_listener)
 		// enable the server
 		http.HandleFunc("/", requestHandler)
-		err = http.ListenAndServe(":"+strconv.FormatUint(uint64(appData.portNumber), 10), nil)
-		return err
+		return http.ListenAndServe(_listener, nil)
 	}
 	err = app.Run(os.Args)
 	if err != nil {
-		heavenshelp.LogPanic(err.Error())
+		ce.ErrorExit(99, "Error from app:"+err.Error())
 	}
 }
