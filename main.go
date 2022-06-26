@@ -90,8 +90,14 @@ func commandLineOptions() []cli.Flag {
 		&cli.UintFlag{
 			Name:    "port",
 			Aliases: []string{"p"},
-			Usage:   "MANDATORY: Port number to listen to. Range: [1..65535]",
-			Value:   0,
+			Usage:   "MANDATORY: Port number to listen to. Range: [1..65535] (default: 4949)",
+			Value:   4949,
+		},
+		&cli.StringFlag{
+			Name:    "ipAddress",
+			Aliases: []string{"l"},
+			Usage:   "IP address to listen to (default: 127.0.0.1)",
+			Value:   "127.0.0.1",
 		},
 		&cli.BoolFlag{
 			Name:    "debug",
@@ -108,14 +114,15 @@ func main() {
 	app := cli.App{}
 	app.Flags = commandLineOptions()
 	app.Name = "mini-web-svc"
-	app.Version = "1.0.0" // semantic versioning
+	app.Version = "1.1.1" // semantic versioning
 	app.Usage = "Web Server for testing."
 	app.Action = func(c *cli.Context) error {
 		evaluateArgs(c, &listeningPort) // exits the app in case of error
-		fmt.Fprintln(os.Stderr, app.Name+"::version: "+app.Version+"::service starting at "+time.Now().Format(time.RFC3339))
+      _listener := c.String("ipAddress") + ":"+strconv.FormatUint(listeningPort, 10)
+		fmt.Fprintln(os.Stderr, app.Name+"::version: "+app.Version+"::service starting at "+time.Now().Format(time.RFC3339) + "::" + _listener)
 		// enable the server
 		http.HandleFunc("/", requestHandler)
-		return http.ListenAndServe("127.0.0.1:"+strconv.FormatUint(listeningPort, 10), nil)
+		return http.ListenAndServe(_listener, nil)
 	}
 	err = app.Run(os.Args)
 	if err != nil {
